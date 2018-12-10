@@ -1,0 +1,5 @@
+[book]
+authors = ["jleahred"]
+multilingual = false
+src = "src"
+title = "thoughts"
