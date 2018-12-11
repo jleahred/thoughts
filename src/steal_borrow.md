@@ -1,12 +1,12 @@
 # Steal borrow
 
-To explain myself I'll use a simple, silly class to calculate an average.
+To explain myself I'll use a simple, silly `struct` to calculate an average.
 
 I defined a method to "add" values and another to "obtain" the average of these values.
 
 It could be like that.
 
-```rust
+```rust,ignore
 struct Avg {
     count: u64,
     sum: u64,
@@ -26,7 +26,7 @@ impl Avg {
 
 An example using it
 
-```rust
+```rust,ignore
 fn main() {
     let mut data = Avg { count: 0, sum: 0 };
     data.add(1);
@@ -61,7 +61,7 @@ Thanks to the last point, we can control and prevent mutability from spreading v
 
 The code would look like this:
 
-```rust
+```rust,ignore
 struct Avg {
     count: u64,
     sum: u64,
@@ -82,7 +82,7 @@ impl Avg {
 
 Now we can use the `Avg` class as follows:
 
-```rust
+```rust,ignore
 fn main() {
     let data = Avg { count: 0, sum: 0 };
     let data = data.add(1);
@@ -95,7 +95,7 @@ fn main() {
 
 Or even fluent API style...
 
-```rust
+```rust,ignore
 fn main() {
     let data = Avg { count: 0, sum: 0 }.add(1).add(2).add(3);
 
@@ -105,7 +105,7 @@ fn main() {
 
 We have the same result, but in our program we use **zero** mutability.
 
-```rust
+```rust,ignore
     let data = Avg { count: 0, sum: 0 };
     let data = data.add(1);
     let data = data.add(2);
@@ -135,7 +135,7 @@ In both cases, since they are mutable, it seems reasonable to want and be able t
 
 Case mutable reference in a function:
 
-```rust
+```rust,ignore
 fn mut_avg(avg: &mut Avg) {
     avg.add(1);
 }
@@ -145,7 +145,7 @@ This doesn't work (because that's what we wanted to avoid).
 
 `Avg` case in a structure:
 
-```rust
+```rust,ignore
 fn struct_avg1(savg: &mut StructAvg) {
     savg.avg.add(1);
 }
@@ -155,7 +155,7 @@ It's not working.
 
 This gets ugly, when we receive it in a structure, we can't even use the ownership pattern that I'm proposing.
 
-```rust
+```rust,ignore
 fn struct_avg2(mut savg: StructAvg) -> StructAvg{
     savg.avg.add(1);
     savg
@@ -179,7 +179,7 @@ To avoid this, I propose to add a new model to those already mentioned. It would
 
 Let me show this new option in the previous examples
 
-```rust
+```rust,ignore
 fn mut_avg(avg: &mut Avg) {
     steal_borrow(avg, &|avg| {
         let avg = avg.add(1);
@@ -211,7 +211,7 @@ fn struct_avg2(mut savg: StructAvg) -> StructAvg {
 
 And `steal_borrow` function could be implemented as...
 
-```rust
+```rust,ignore
 pub fn steal_borrow<T>(target: &mut T, f: &Fn(T) -> T) {
     let mut fake = unsafe { std::mem::zeroed() };
     std::mem::swap(&mut fake, target);
@@ -221,8 +221,26 @@ pub fn steal_borrow<T>(target: &mut T, f: &Fn(T) -> T) {
 }
 ```
 
+Bellow, on references, there is a link with a better solution on crates.io
+
 It's not `zero cost abstraction` but it's not expensive.
 
 > Attention!!!, to avoid that `zeroed` incurs in a cost in big structures, those data should be put in a `Box<...>`
 
 What do you think???
+
+## References
+
+- Here, the boys of fpcomplete propose the same idea that is the origin of the problems that I explain and I propose a solution.
+  - [https://www.fpcomplete.com/blog/2018/10/is-rust-functional]()
+- One of the places where I explain the proposal
+
+  - [https://www.reddit.com/r/rust/comments/a4x00h/thought_for_reducing_mutability_in_rust/]()
+
+- CornedBee point to two great links with similar proposal and good implementations
+
+  - [https://crates.io/crates/take_mut]()
+  - [https://crates.io/crates/replace_with]()
+
+- The way to solve this kind of problems has been proposed as RFC, but not approved
+  - [https://github.com/rust-lang/rfcs/pull/1736]()
